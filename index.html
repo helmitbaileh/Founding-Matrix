@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Startup Equity Matrix</title>
+    <title>Startup Equity Matrix | Validated Weights</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap"
@@ -13,8 +13,9 @@
       :root {
         --bg-color: #ffffff;
         --main-color: #000000;
-        --accent-color: #2563eb; /* Royal Blue */
-        --money-color: #059669; /* Emerald Green */
+        --accent-color: #2563eb;
+        --money-color: #059669;
+        --error-color: #dc2626;
       }
       body {
         font-family: "Inter", sans-serif;
@@ -38,13 +39,12 @@
       }
 
       .brutalist-input:focus {
-        background-color: #e0f2fe; /* Light Blue focus */
+        background-color: #e0f2fe;
         border-color: var(--accent-color);
       }
 
-      /* Specific style for Cash Input */
       .cash-input:focus {
-        background-color: #d1fae5; /* Light Green focus */
+        background-color: #d1fae5;
         border-color: var(--money-color);
       }
 
@@ -98,7 +98,6 @@
         font-size: 0.85rem;
       }
 
-      /* Remove number spinners for cleaner look, but allow functionality */
       input[type="number"]::-webkit-inner-spin-button,
       input[type="number"]::-webkit-outer-spin-button {
         -webkit-appearance: none;
@@ -115,7 +114,7 @@
           Founding Matrix
         </h1>
         <p class="text-lg font-bold mt-2 text-gray-600">
-          Dynamic Equity Calculator (Capital + Skills)
+          Dynamic Equity Calculator (Validated Weights)
         </p>
       </div>
     </header>
@@ -128,10 +127,10 @@
               class="bg-green-600 text-white w-8 h-8 flex items-center justify-center text-lg"
               >$</span
             >
-            Weighting
+            Global Split
           </h2>
 
-          <div class="mb-6">
+          <div class="mb-4">
             <label class="block text-sm font-bold mb-2 uppercase"
               >Cash Weight</label
             >
@@ -145,9 +144,6 @@
               />
               <span class="font-black text-2xl">%</span>
             </div>
-            <p class="text-xs text-gray-500 mt-2 font-mono">
-              How much cash matters
-            </p>
           </div>
 
           <div class="border-t-2 border-black my-4 border-dashed"></div>
@@ -166,15 +162,32 @@
               />
               <span class="font-black text-2xl">%</span>
             </div>
-            <p class="text-xs text-gray-500 mt-2 font-mono">
-              Auto-calculated (100 - Cash)
-            </p>
           </div>
         </div>
 
         <div class="brutalist-border p-6 bg-white">
-          <h2 class="text-xl font-black mb-4 uppercase">Skill Factors</h2>
-          <div id="factorsList" class="space-y-3 mb-4"></div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-black uppercase">Skill Factors</h2>
+            <div
+              id="weightStatusBadge"
+              class="text-xs font-bold px-2 py-1 bg-gray-200"
+            >
+              Checking...
+            </div>
+          </div>
+
+          <div id="factorsList" class="space-y-3 mb-6"></div>
+
+          <div
+            class="p-3 border-2 border-black mb-4 flex justify-between items-center"
+            id="totalWeightContainer"
+          >
+            <span class="font-bold text-sm uppercase">Total Weight:</span>
+            <span id="factorsTotalDisplay" class="font-mono font-black text-xl"
+              >0/100</span
+            >
+          </div>
+
           <button onclick="addFactor()" class="w-full brutalist-btn text-sm">
             + Add Skill Factor
           </button>
@@ -220,29 +233,24 @@
           </div>
 
           <div class="brutalist-border p-6 bg-gray-50">
-            <h3 class="font-black text-xl mb-6 uppercase">The Math Logic</h3>
+            <h3 class="font-black text-xl mb-6 uppercase">Calculation Logic</h3>
             <ul
               class="text-sm space-y-3 list-disc list-inside font-mono text-gray-700"
             >
               <li>
                 <span class="font-bold">Cash Score:</span> (Partner Cash / Total
-                Cash) × <span id="mathCashW">30</span>
+                Cash) × Global Cash Weight
               </li>
               <li>
-                <span class="font-bold">Skill Score:</span> (Partner Points /
-                Total Points) × <span id="mathSkillW">70</span>
+                <span class="font-bold">Skill Score:</span> (Partner Weighted
+                Points / Total Points) × Global Skill Weight
               </li>
               <li>
-                <span class="font-bold">Total Equity:</span> Cash Score + Skill
-                Score
+                <span class="font-bold">Factor Weighting:</span> Each skill
+                factor contributes to the "Weighted Points" based on its
+                internal weight (Total must be 100).
               </li>
             </ul>
-            <div
-              class="mt-6 p-4 bg-yellow-100 border border-yellow-500 text-xs font-bold"
-            >
-              NOTE: Skill scores are rated 0-10 relative to each factor's
-              internal weight.
-            </div>
           </div>
         </div>
       </div>
@@ -255,10 +263,11 @@
       };
 
       // Factors: Internal weight determines importance of that skill
+      // Start with a valid 100 split
       let factors = [
         { id: "f1", name: "Idea & Setup", weight: 20 },
-        { id: "f2", name: "Commitment (Time)", weight: 40 },
-        { id: "f3", name: "Technical Skills", weight: 40 },
+        { id: "f2", name: "Commitment", weight: 40 },
+        { id: "f3", name: "Tech Skills", weight: 40 },
       ];
 
       let partners = [
@@ -292,13 +301,13 @@
 
       function init() {
         renderFactorsList();
-        rebuildTableStructure(); // Run once to build DOM
-        updateCalculationsOnly(); // Run logic
+        rebuildTableStructure();
+        updateCalculationsOnly();
       }
 
-      // --- 1. Configuration & Weights ---
+      // --- 1. Calculations & Logic ---
       function updateCalculationsOnly() {
-        // Update Config from Input
+        // Update Global Config
         let capVal = parseFloat(document.getElementById("capitalWeight").value);
         if (isNaN(capVal)) capVal = 0;
         if (capVal > 100) capVal = 100;
@@ -307,13 +316,27 @@
         const skillWeight = 100 - capVal;
         document.getElementById("skillsWeight").value = skillWeight;
 
-        // Update Text Labels
-        document.getElementById("mathCashW").innerText = config.capitalWeight;
-        document.getElementById("mathSkillW").innerText = skillWeight;
-        const hCash = document.getElementById("headerCashPts");
-        const hSkill = document.getElementById("headerSkillPts");
-        if (hCash) hCash.innerText = `Max: ${config.capitalWeight}`;
-        if (hSkill) hSkill.innerText = `Max: ${skillWeight}`;
+        // --- Check Factor Sum (Validation Logic) ---
+        let factorSum = factors.reduce((sum, f) => sum + (f.weight || 0), 0);
+        const totalDisplay = document.getElementById("factorsTotalDisplay");
+        const totalContainer = document.getElementById("totalWeightContainer");
+        const statusBadge = document.getElementById("weightStatusBadge");
+
+        totalDisplay.innerText = `${factorSum}/100`;
+
+        if (factorSum === 100) {
+          totalContainer.className =
+            "p-3 border-2 border-black mb-4 flex justify-between items-center bg-green-100 text-green-900";
+          statusBadge.className =
+            "text-xs font-bold px-2 py-1 bg-green-500 text-white uppercase";
+          statusBadge.innerText = "BALANCED";
+        } else {
+          totalContainer.className =
+            "p-3 border-2 border-red-500 mb-4 flex justify-between items-center bg-red-50 text-red-700";
+          statusBadge.className =
+            "text-xs font-bold px-2 py-1 bg-red-500 text-white uppercase";
+          statusBadge.innerText = "UNBALANCED";
+        }
 
         // --- THE MATH ---
 
@@ -329,13 +352,14 @@
         partners.forEach((p) => {
           let pSkillSum = 0;
           factors.forEach((f) => {
+            // Score (0-10) multiplied by Factor Weight
             pSkillSum += (p.scores[f.id] || 0) * f.weight;
           });
           partnersRawSkillTotal[p.id] = pSkillSum;
           grandTotalSkillPoints += pSkillSum;
         });
 
-        // 3. Update Results in DOM (WITHOUT Re-rendering Inputs)
+        // 3. Update Results
         partners.forEach((p) => {
           let cashShare = totalCash > 0 ? p.cash / totalCash : 0;
           let finalCashPoints = cashShare * config.capitalWeight;
@@ -348,7 +372,6 @@
 
           let finalEquity = finalCashPoints + finalSkillPoints;
 
-          // Update text cells by ID
           const cashCell = document.getElementById(`res-cash-${p.id}`);
           const skillCell = document.getElementById(`res-skill-${p.id}`);
           const eqCell = document.getElementById(`res-equity-${p.id}`);
@@ -358,7 +381,6 @@
           if (eqCell) eqCell.innerText = finalEquity.toFixed(1) + "%";
         });
 
-        // 4. Update Bars
         updateBars(
           partners,
           totalCash,
@@ -376,7 +398,6 @@
         skillWeight
       ) {
         const container = document.getElementById("barsContainer");
-        // Re-render bars (safe to re-render these as they are not inputs)
         container.innerHTML = partners
           .map((p) => {
             let cashShare = totalCash > 0 ? p.cash / totalCash : 0;
@@ -398,14 +419,10 @@
                         <div class="w-full border-2 border-black h-6 flex bg-gray-100">
                             <div class="bg-green-500 h-full" style="width: ${cashPoints.toFixed(
                               2
-                            )}%" title="Cash Points"></div>
+                            )}%" title="Cash Contribution"></div>
                             <div class="bg-black h-full" style="width: ${skillPoints.toFixed(
                               2
-                            )}%" title="Skill Points"></div>
-                        </div>
-                         <div class="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
-                            <span>Cash: ${cashPoints.toFixed(1)}</span>
-                            <span>Skill: ${skillPoints.toFixed(1)}</span>
+                            )}%" title="Skill Contribution"></div>
                         </div>
                     </div>
                 `;
@@ -413,8 +430,7 @@
           .join("");
       }
 
-      // --- 2. Structure Management (Rebuilds DOM) ---
-      // Only call this when adding/removing partners or factors
+      // --- 2. DOM Structure ---
 
       function rebuildTableStructure() {
         const headerRow = document.getElementById("tableHeaderRow");
@@ -425,7 +441,7 @@
                 <th class="w-48 bg-black text-white px-4 text-left">Partner</th>
                 <th class="w-40 bg-green-50 text-green-900 border-green-800">
                     Capital ($)<br>
-                    <span class="text-[10px] opacity-70">Real Amount</span>
+                    <span class="text-[10px] opacity-70">Actual Amount</span>
                 </th>
             `;
 
@@ -438,8 +454,8 @@
         });
 
         headerHTML += `
-                <th class="w-24 bg-gray-100">Cash Pts<br><span id="headerCashPts" class="text-[10px] text-gray-500"></span></th>
-                <th class="w-24 bg-gray-100">Skill Pts<br><span id="headerSkillPts" class="text-[10px] text-gray-500"></span></th>
+                <th class="w-24 bg-gray-100 text-xs">Cash Pts</th>
+                <th class="w-24 bg-gray-100 text-xs">Skill Pts</th>
                 <th class="w-32 bg-blue-600 text-white text-lg">Equity %</th>
                 <th class="w-12"></th>
             `;
@@ -448,7 +464,6 @@
         // B. Body Rows
         tbody.innerHTML = partners
           .map((p) => {
-            // Generate Skill Inputs
             const skillInputs = factors
               .map(
                 (f) => `
@@ -477,11 +492,9 @@
                             class="cash-input brutalist-input text-center h-full bg-transparent">
                         </td>
                         ${skillInputs}
-                        
                         <td class="bg-gray-50 font-mono font-bold text-gray-500 text-sm" id="res-cash-${p.id}">0</td>
                         <td class="bg-gray-50 font-mono font-bold text-gray-500 text-sm" id="res-skill-${p.id}">0</td>
                         <td class="bg-blue-600 text-white font-black text-xl font-mono" id="res-equity-${p.id}">0%</td>
-                        
                         <td class="text-center">
                             <button onclick="removePartner('${p.id}')" class="brutalist-btn danger">X</button>
                         </td>
@@ -491,28 +504,21 @@
           .join("");
       }
 
-      // --- 3. Input Handlers (Update Data & Recalc Only) ---
-
+      // --- 3. Input Handlers ---
       function handleNameInput(id, val) {
-        const p = partners.find((x) => x.id === id);
-        if (p) p.name = val;
-        updateCalculationsOnly(); // Update names in bars
+        partners.find((x) => x.id === id).name = val;
+        updateCalculationsOnly();
       }
-
       function handleCashInput(id, val) {
-        const p = partners.find((x) => x.id === id);
-        if (p) p.cash = parseFloat(val) || 0;
+        partners.find((x) => x.id === id).cash = parseFloat(val) || 0;
         updateCalculationsOnly();
       }
-
       function handleSkillInput(pId, fId, val) {
-        const p = partners.find((x) => x.id === pId);
-        if (p) p.scores[fId] = parseFloat(val) || 0;
+        partners.find((x) => x.id === pId).scores[fId] = parseFloat(val) || 0;
         updateCalculationsOnly();
       }
 
-      // --- 4. Add/Remove Helpers ---
-
+      // --- 4. Factor & Partner Management ---
       function renderFactorsList() {
         const container = document.getElementById("factorsList");
         container.innerHTML = factors
@@ -521,17 +527,17 @@
                 <div class="flex gap-2 items-center">
                     <button onclick="removeFactor('${f.id}')" class="text-red-600 font-bold px-2 border border-red-200 hover:bg-red-50">✕</button>
                     <input type="text" value="${f.name}" onchange="updateFactorData('${f.id}', 'name', this.value)" class="brutalist-input text-sm py-2 border-gray-300">
-                    <input type="number" value="${f.weight}" onchange="updateFactorData('${f.id}', 'weight', this.value)" class="brutalist-input w-20 text-center text-sm py-2 bg-gray-100" title="Weight">
+                    <input type="number" value="${f.weight}" oninput="updateFactorData('${f.id}', 'weight', this.value)" class="brutalist-input w-20 text-center text-sm py-2 bg-gray-100 font-mono">
                 </div>
             `
           )
           .join("");
-        // After changing factor list, we must rebuild structure
+        // No full rebuild needed, just calc updates
       }
 
       function addFactor() {
         const id = "f" + Date.now();
-        factors.push({ id, name: "New Skill", weight: 20 });
+        factors.push({ id, name: "New Factor", weight: 0 });
         partners.forEach((p) => (p.scores[id] = 0));
         renderFactorsList();
         rebuildTableStructure();
@@ -547,17 +553,21 @@
 
       function updateFactorData(id, field, val) {
         const f = factors.find((x) => x.id === id);
-        if (field === "weight") f.weight = parseFloat(val) || 0;
-        if (field === "name") f.name = val;
-        rebuildTableStructure(); // Need to update headers
-        updateCalculationsOnly();
+        if (field === "weight") {
+          f.weight = parseFloat(val) || 0;
+          updateCalculationsOnly(); // Update total sum instantly
+        }
+        if (field === "name") {
+          f.name = val;
+          rebuildTableStructure();
+        }
       }
 
       function addPartner() {
         const id = "p" + Date.now();
         const scores = {};
         factors.forEach((f) => (scores[f.id] = 0));
-        partners.push({ id, name: "New Partner", cash: 0, scores });
+        partners.push({ id, name: "Partner", cash: 0, scores });
         rebuildTableStructure();
         updateCalculationsOnly();
       }
@@ -568,7 +578,6 @@
         updateCalculationsOnly();
       }
 
-      // Start
       init();
     </script>
   </body>
