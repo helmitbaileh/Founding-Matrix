@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Datvio | الحصص</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+      body {
+        font-family: "Tajawal", sans-serif;
+        background-color: #f3f4f6;
+      }
+      .table-input {
+        width: 100%;
+        text-align: center;
+        background: transparent;
+        padding: 6px;
+        font-weight: 600;
+        border-radius: 6px;
+      }
+      .table-input:not(:disabled):hover {
+        background: #f9fafb;
+      }
+      .table-input:disabled {
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <nav
+      class="bg-white border-b border-gray-200 px-6 h-16 flex justify-between items-center sticky top-0 z-40"
+    >
+      <div class="flex items-center gap-6">
+        <div class="font-black text-2xl text-gray-900">DATVIO</div>
+        <div class="flex bg-gray-100 p-1 rounded-lg gap-1">
+          <a
+            href="equity.html"
+            class="px-4 py-1.5 bg-white text-blue-600 font-bold text-sm rounded-md shadow-sm"
+            >الحصص</a
+          >
+          <a
+            href="work.html"
+            class="px-4 py-1.5 text-gray-500 font-bold text-sm hover:bg-gray-200 rounded-md"
+            >سجل العمل</a
+          >
+        </div>
+      </div>
+      <button
+        id="logout"
+        class="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded"
+      >
+        خروج
+      </button>
+    </nav>
+
+    <div class="p-8 max-w-[1600px] mx-auto w-full">
+      <div class="flex justify-between items-end mb-8">
+        <h2 class="text-3xl font-bold text-gray-900">
+          مرحباً، <span id="userName" class="text-blue-600">...</span>
+        </h2>
+
+        <div class="flex gap-3 bg-white p-2 rounded-xl border border-gray-200">
+          <div class="text-center px-3">
+            <div class="text-[9px] text-gray-400 font-bold">المدة</div>
+            <input
+              id="cfgVest"
+              type="number"
+              class="w-12 text-center font-bold text-sm outline-none"
+            />
+          </div>
+          <div class="text-center px-3 border-r border-gray-100">
+            <div class="text-[9px] text-gray-400 font-bold">Cliff</div>
+            <input
+              id="cfgCliff"
+              type="number"
+              class="w-12 text-center font-bold text-sm text-amber-600 outline-none"
+            />
+          </div>
+          <div class="text-center px-3 border-r border-gray-100">
+            <div class="text-[9px] text-gray-400 font-bold">المال %</div>
+            <input
+              id="cfgCash"
+              type="number"
+              class="w-12 text-center font-bold text-sm text-green-600 outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        <div
+          class="xl:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden"
+        >
+          <div
+            class="p-4 border-b border-gray-100 flex justify-between items-center"
+          >
+            <h3 class="font-bold text-sm">بيانات الشركاء</h3>
+            <div class="flex gap-2">
+              <button
+                onclick="exportXLS()"
+                class="text-[10px] bg-green-50 text-green-700 px-3 py-1 font-bold rounded hover:bg-green-100"
+              >
+                Excel
+              </button>
+              <button
+                id="addFactor"
+                class="hidden text-[10px] bg-gray-50 text-gray-600 px-3 py-1 font-bold rounded hover:bg-gray-100"
+              >
+                + عمود
+              </button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead
+                id="tHead"
+                class="bg-gray-50 text-xs text-gray-500 border-b"
+              ></thead>
+              <tbody id="tBody" class="text-sm divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="xl:col-span-4">
+          <h3 class="font-bold text-sm mb-3 text-gray-700">
+            الاستحقاقات القادمة
+          </h3>
+          <div id="cardsArea" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        doc,
+        setDoc,
+        onSnapshot,
+        updateDoc,
+        deleteDoc,
+        getDoc,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+      import {
+        getAuth,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCi4vc7l79E1vh2w1bPLX__yvqSxcwTFrg",
+        authDomain: "equity-matrix.firebaseapp.com",
+        projectId: "equity-matrix",
+        storageBucket: "equity-matrix.firebasestorage.app",
+        messagingSenderId: "456507473964",
+        appId: "1:456507473964:web:efac6eceafaf5bd3e3d189",
+      };
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      let state = { config: {}, factors: [], partners: [] },
+        userRole = "viewer";
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) return (window.location.href = "index.html");
+        document.getElementById("userName").innerText =
+          user.displayName.split(" ")[0];
+        const snap = await getDoc(doc(db, "partners_v6", user.uid));
+        if (snap.exists()) userRole = snap.data().role || "viewer";
+        init();
+      });
+
+      document.getElementById("logout").onclick = () => signOut(auth);
+
+      function init() {
+        if (userRole === "admin") {
+          document.getElementById("addFactor").classList.remove("hidden");
+          ["cfgVest", "cfgCliff", "cfgCash"].forEach(
+            (id) => (document.getElementById(id).onchange = saveConfig)
+          );
+        } else {
+          ["cfgVest", "cfgCliff", "cfgCash"].forEach(
+            (id) => (document.getElementById(id).disabled = true)
+          );
+        }
+
+        onSnapshot(doc(db, "system", "config_v6"), (s) => {
+          if (s.exists()) {
+            state.config = s.data();
+            updateUI();
+            render();
+          }
+        });
+        onSnapshot(collection(db, "factors_v6"), (s) => {
+          state.factors = [];
+          s.forEach((d) => state.factors.push({ id: d.id, ...d.data() }));
+          render();
+        });
+        onSnapshot(collection(db, "partners_v6"), (s) => {
+          state.partners = [];
+          s.forEach((d) => state.partners.push({ id: d.id, ...d.data() }));
+          render();
+        });
+      }
+
+      function saveConfig() {
+        setDoc(doc(db, "system", "config_v6"), {
+          vesting: Number(document.getElementById("cfgVest").value),
+          cliff: Number(document.getElementById("cfgCliff").value),
+          cashWeight: Number(document.getElementById("cfgCash").value),
+        });
+      }
+
+      function updateUI() {
+        document.getElementById("cfgVest").value = state.config.vesting;
+        document.getElementById("cfgCliff").value = state.config.cliff;
+        document.getElementById("cfgCash").value = state.config.cashWeight;
+      }
+
+      window.render = () => {
+        const isAdmin = userRole === "admin";
+        let h = `<th class="pr-4 py-3 text-right">الشريك</th><th class="px-2 text-center text-emerald-700">المال ($)</th>`;
+        state.factors.forEach((f) => {
+          h += `<th class="px-2 min-w-[100px] text-center"><div class="flex flex-col items-center"><input value="${
+            f.name
+          }" ${!isAdmin ? "disabled" : ""} onchange="updFactor('${
+            f.id
+          }','name',this.value)" class="table-input text-xs"><div class="flex items-center justify-center gap-1"><span class="text-[9px]">وزن</span><input type="number" value="${
+            f.weight
+          }" ${!isAdmin ? "disabled" : ""} onchange="updFactor('${
+            f.id
+          }','weight',this.value)" class="w-8 text-center text-[10px] outline-none font-bold bg-transparent border-b"></div></div></th>`;
+        });
+        h += `<th class="pl-4 text-left text-blue-700">النسبة</th>`;
+        document.getElementById("tHead").innerHTML = h;
+
+        let totCash = state.partners.reduce(
+          (a, b) => a + (Number(b.cash) || 0),
+          0
+        );
+        let totPts = 0;
+        let pPts = {};
+        state.partners.forEach((p) => {
+          let s = 0;
+          state.factors.forEach(
+            (f) => (s += (p.scores?.[f.id] || 0) * f.weight)
+          );
+          pPts[p.id] = s;
+          totPts += s;
+        });
+        const cashWt = state.config.cashWeight || 30;
+
+        // Body
+        let b = "";
+        state.partners.forEach((p) => {
+          let cashShare = totCash ? p.cash / totCash : 0;
+          let skillShare = totPts ? pPts[p.id] / totPts : 0;
+          let eq = cashShare * cashWt + skillShare * (100 - cashWt);
+          p._eq = eq;
+
+          let cells = state.factors
+            .map(
+              (f) =>
+                `<td class="p-1 border-r border-gray-100"><input type="number" min="0" max="10" value="${
+                  p.scores?.[f.id] || 0
+                }" ${!isAdmin ? "disabled" : ""} onchange="updScore('${
+                  p.id
+                }','${f.id}',this.value)" class="table-input"></td>`
+            )
+            .join("");
+
+          b += `<tr class="hover:bg-gray-50 group"><td class="pr-4 py-3"><div class="font-bold text-gray-800">${
+            p.name
+          }</div><input type="text" value="${p.jobTitle || ""}" ${
+            !isAdmin ? "disabled" : ""
+          } onchange="updPart('${
+            p.id
+          }','jobTitle',this.value)" class="w-full text-[10px] text-gray-500 bg-transparent outline-none mb-1" placeholder="المنصب"><input type="date" value="${
+            p.start
+          }" ${!isAdmin ? "disabled" : ""} onchange="updPart('${
+            p.id
+          }','start',this.value)" class="bg-transparent outline-none cursor-pointer w-24 text-[10px] text-gray-400 font-bold"></td><td class="px-2"><input type="number" value="${
+            p.cash
+          }" ${!isAdmin ? "disabled" : ""} onchange="updPart('${
+            p.id
+          }','cash',this.value)" class="table-input font-bold text-emerald-600 dir-ltr"></td>${cells}<td class="pl-4 text-left font-black text-blue-600 dir-ltr">${eq.toFixed(
+            1
+          )}%</td></tr>`;
+        });
+        document.getElementById("tBody").innerHTML = b;
+        renderCards();
+      };
+
+      function renderCards() {
+        const now = new Date();
+        const VEST = Number(state.config.vesting) || 48;
+        const CLIFF = Number(state.config.cliff) || 6;
+
+        document.getElementById("cardsArea").innerHTML = state.partners
+          .map((p) => {
+            const start = new Date(p.start);
+            const monthsPassed = Math.max(
+              0,
+              (now - start) / (1000 * 60 * 60 * 24 * 30.44)
+            );
+            const total = p._eq || 0;
+
+            let vested = 0;
+            let nextAmt = 0;
+            let nextDate = new Date(start);
+            let statusText = "";
+            let statusColor = "";
+
+            if (monthsPassed < CLIFF) {
+              // فترة الكليف
+              vested = 0;
+              statusText = "فترة أمان (Cliff)";
+              statusColor = "bg-amber-100 text-amber-700";
+
+              // الاستحقاق القادم: عند نهاية الكليف
+              nextDate.setMonth(start.getMonth() + CLIFF);
+              nextAmt = (CLIFF / VEST) * total;
+            } else if (monthsPassed >= VEST) {
+              // مكتمل
+              vested = total;
+              statusText = "مكتمل";
+              statusColor = "bg-green-100 text-green-700";
+              nextAmt = 0; // لا يوجد قادم
+            } else {
+              // فترة الاستحقاق الجارية
+              vested = (monthsPassed / VEST) * total;
+              statusText = "جاري الاستحقاق";
+              statusColor = "bg-blue-100 text-blue-700";
+
+              // الاستحقاق القادم: الشهر التالي
+              const nextMonthIndex = Math.floor(monthsPassed) + 1;
+              nextDate.setMonth(start.getMonth() + nextMonthIndex);
+              nextAmt = (1 / VEST) * total;
+            }
+
+            const pct = Math.min(100, (monthsPassed / VEST) * 100);
+            // تنسيق التاريخ بالأرقام الإنجليزية (YYYY-MM-DD)
+            const dateStr = nextDate.toISOString().split("T")[0];
+
+            return `
+        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+            <div class="flex justify-between items-center mb-3">
+                <span class="font-bold text-sm text-gray-900">${p.name}</span>
+                <span class="text-[10px] font-bold px-2 py-1 rounded ${statusColor}">${statusText}</span>
+            </div>
+            
+            <div class="flex justify-between items-end mb-3">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-gray-400">المكتسب حالياً</span>
+                    <span class="font-black text-lg text-gray-800 dir-ltr">${vested.toFixed(
+                      2
+                    )}%</span>
+                </div>
+                
+                ${
+                  nextAmt > 0
+                    ? `
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-blue-500 font-bold mb-1">الاستحقاق القادم</span>
+                    <div class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-bold flex gap-2">
+                        <span class="dir-ltr text-black font-black">+${nextAmt.toFixed(
+                          2
+                        )}%</span>
+                        <span class="text-gray-400">|</span>
+                        <span class="dir-ltr font-mono">${dateStr}</span>
+                    </div>
+                </div>
+                `
+                    : ""
+                }
+            </div>
+
+            <div class="relative h-2 bg-gray-100 rounded-full overflow-hidden w-full">
+                <div class="absolute h-full bg-slate-800 transition-all duration-1000" style="width: ${pct}%"></div>
+                <div class="absolute h-full w-[2px] bg-red-400 z-10" style="right:${
+                  (CLIFF / VEST) * 100
+                }%" title="Cliff End"></div>
+            </div>
+        </div>`;
+          })
+          .join("");
+      }
+      window.updScore = (pid, fid, val) =>
+        updateDoc(doc(db, "partners_v6", pid), {
+          [`scores.${fid}`]: Number(val),
+        });
+      window.updPart = (pid, key, val) =>
+        updateDoc(doc(db, "partners_v6", pid), {
+          [key]: key === "cash" ? Number(val) : val,
+        });
+      window.updFactor = (fid, key, val) =>
+        updateDoc(doc(db, "factors_v6", fid), {
+          [key]: key === "weight" ? Number(val) : val,
+        });
+      window.exportXLS = () => {
+        const data = [["الشريك", "المنصب", "البدء", "المال", "النسبة"]];
+        state.partners.forEach((p) =>
+          data.push([p.name, p.jobTitle, p.start, p.cash, p._eq])
+        );
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.aoa_to_sheet(data),
+          "Equity"
+        );
+        XLSX.writeFile(wb, "Equity_Report.xlsx");
+      };
+      document.getElementById("addFactor").onclick = async () =>
+        setDoc(doc(collection(db, "factors_v6")), {
+          name: "جديد",
+          weight: 5,
+          created: Date.now(),
+        });
+    </script>
+  </body>
+</html>
