@@ -16,124 +16,219 @@
     <style>
       body {
         font-family: "Tajawal", sans-serif;
-        background-color: #f3f4f6;
+        background-color: #f8fafc;
+        color: #0f172a;
       }
-      .table-input {
+
+      /* تصميم الجدول الشبكي (Excel Style) */
+      table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      th {
+        background-color: #f1f5f9;
+        color: #475569;
+        font-weight: 800;
+        border-bottom: 2px solid #cbd5e1;
+        border-left: 1px solid #e2e8f0;
+        padding: 12px 8px;
+        font-size: 0.8rem;
+      }
+      td {
+        border-bottom: 1px solid #e2e8f0;
+        border-left: 1px solid #e2e8f0;
+        padding: 6px;
+        background-color: #fff;
+        transition: background 0.2s;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background-color: #f8fafc;
+      }
+      th:last-child,
+      td:last-child {
+        border-left: none;
+      }
+
+      /* حقول الإدخال البارزة */
+      .grid-input {
         width: 100%;
         text-align: center;
-        background: transparent;
-        padding: 6px;
-        font-weight: 600;
-        border-radius: 6px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 6px 4px;
+        font-weight: 700;
+        color: #334155;
+        font-family: "Tajawal";
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: all 0.2s;
       }
-      .table-input:not(:disabled):hover {
-        background: #f9fafb;
+      .grid-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        outline: none;
+        z-index: 10;
+        position: relative;
       }
-      .table-input:disabled {
-        color: #6b7280;
+      .grid-input:hover:not(:disabled) {
+        border-color: #94a3b8;
+      }
+      .grid-input:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border: none;
+        box-shadow: none;
+      }
+
+      /* ألوان الأعمدة للتمييز */
+      .col-partner {
+        background-color: #f8fafc;
+        width: 180px;
+      }
+      .col-legacy {
+        background-color: #fffbeb;
+        width: 90px;
+      } /* لون أصفر فاتح للرصيد المرحل */
+      .col-cash {
+        background-color: #f0fdf4;
+        width: 100px;
+      }
+      .col-result {
+        background-color: #eff6ff;
+        font-weight: 900;
+        color: #1d4ed8;
+        width: 90px;
       }
     </style>
   </head>
   <body class="min-h-screen flex flex-col">
     <nav
-      class="bg-white border-b border-gray-200 px-6 h-16 flex justify-between items-center sticky top-0 z-40"
+      class="bg-white border-b border-gray-200 px-6 h-16 flex justify-between items-center sticky top-0 z-40 shadow-sm"
     >
       <div class="flex items-center gap-6">
-        <div class="font-black text-2xl text-gray-900">DATVIO</div>
-        <div class="flex bg-gray-100 p-1 rounded-lg gap-1">
+        <div class="font-black text-2xl text-slate-900 tracking-tighter">
+          DATVIO
+        </div>
+        <div class="flex bg-slate-100 p-1 rounded-lg gap-1">
           <a
             href="equity.html"
-            class="px-4 py-1.5 bg-white text-blue-600 font-bold text-sm rounded-md shadow-sm"
+            class="px-4 py-1.5 bg-white text-blue-700 font-bold text-sm rounded shadow-sm border border-gray-200"
             >الحصص</a
           >
           <a
             href="work.html"
-            class="px-4 py-1.5 text-gray-500 font-bold text-sm hover:bg-gray-200 rounded-md"
+            class="px-4 py-1.5 text-slate-500 font-bold text-sm hover:bg-gray-200 rounded transition"
             >سجل العمل</a
           >
         </div>
       </div>
       <button
         id="logout"
-        class="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded"
+        class="text-xs font-bold text-red-500 border border-red-100 hover:bg-red-50 px-4 py-2 rounded-lg transition"
       >
         خروج
       </button>
     </nav>
 
-    <div class="p-8 max-w-[1600px] mx-auto w-full">
-      <div class="flex justify-between items-end mb-8">
-        <h2 class="text-3xl font-bold text-gray-900">
-          مرحباً، <span id="userName" class="text-blue-600">...</span>
-        </h2>
+    <div class="p-6 md:p-10 max-w-[1800px] mx-auto w-full">
+      <div
+        class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4"
+      >
+        <div>
+          <h2 class="text-3xl font-black text-slate-800 mb-1">
+            مرحباً، <span id="userName" class="text-blue-600">...</span>
+          </h2>
+          <p class="text-xs text-slate-500 font-bold">
+            للحفاظ على الحصص القديمة عند تغيير المعايير: انسخ "المكتسب" وضعه في
+            "رصيد مُرحّل" ثم حدث تاريخ البدء لليوم.
+          </p>
+        </div>
 
-        <div class="flex gap-3 bg-white p-2 rounded-xl border border-gray-200">
-          <div class="text-center px-3">
-            <div class="text-[9px] text-gray-400 font-bold">المدة</div>
+        <div
+          class="flex bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden divide-x divide-x-reverse divide-gray-200"
+        >
+          <div class="px-4 py-2 text-center bg-gray-50">
+            <span class="block text-[10px] text-slate-400 font-bold uppercase"
+              >مدة التملك</span
+            >
             <input
               id="cfgVest"
               type="number"
-              class="w-12 text-center font-bold text-sm outline-none"
+              class="w-12 bg-transparent text-center font-bold text-sm outline-none"
             />
           </div>
-          <div class="text-center px-3 border-r border-gray-100">
-            <div class="text-[9px] text-gray-400 font-bold">Cliff</div>
+          <div class="px-4 py-2 text-center bg-gray-50">
+            <span class="block text-[10px] text-slate-400 font-bold uppercase"
+              >Cliff</span
+            >
             <input
               id="cfgCliff"
               type="number"
-              class="w-12 text-center font-bold text-sm text-amber-600 outline-none"
+              class="w-12 bg-transparent text-center font-bold text-sm text-amber-600 outline-none"
             />
           </div>
-          <div class="text-center px-3 border-r border-gray-100">
-            <div class="text-[9px] text-gray-400 font-bold">المال %</div>
+          <div class="px-4 py-2 text-center bg-gray-50">
+            <span class="block text-[10px] text-slate-400 font-bold uppercase"
+              >وزن المال %</span
+            >
             <input
               id="cfgCash"
               type="number"
-              class="w-12 text-center font-bold text-sm text-green-600 outline-none"
+              class="w-12 bg-transparent text-center font-bold text-sm text-green-600 outline-none"
             />
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        <div
-          class="xl:col-span-8 bg-white rounded-xl border border-gray-200 overflow-hidden"
-        >
-          <div
-            class="p-4 border-b border-gray-100 flex justify-between items-center"
-          >
-            <h3 class="font-bold text-sm">بيانات الشركاء</h3>
+        <div class="xl:col-span-8">
+          <div class="flex justify-between items-center mb-3">
+            <h3
+              class="font-bold text-sm text-slate-700 flex items-center gap-2"
+            >
+              <i class="fa-solid fa-table-cells"></i> جدول التقييم المفصل
+            </h3>
             <div class="flex gap-2">
               <button
                 onclick="exportXLS()"
-                class="text-[10px] bg-green-50 text-green-700 px-3 py-1 font-bold rounded hover:bg-green-100"
+                class="text-[11px] font-bold bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded shadow-sm flex items-center gap-2 transition"
               >
-                Excel
+                <i class="fa-solid fa-file-excel"></i> تصدير Excel
               </button>
               <button
                 id="addFactor"
-                class="hidden text-[10px] bg-gray-50 text-gray-600 px-3 py-1 font-bold rounded hover:bg-gray-100"
+                class="hidden text-[11px] font-bold bg-white border border-gray-300 hover:border-blue-500 hover:text-blue-600 text-slate-600 px-3 py-1.5 rounded transition shadow-sm"
               >
-                + عمود
+                + إضافة معيار
               </button>
             </div>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead
-                id="tHead"
-                class="bg-gray-50 text-xs text-gray-500 border-b"
-              ></thead>
-              <tbody id="tBody" class="text-sm divide-y"></tbody>
+
+          <div class="overflow-x-auto pb-4">
+            <table id="equityTable">
+              <thead id="tHead"></thead>
+              <tbody id="tBody"></tbody>
             </table>
           </div>
         </div>
 
-        <div class="xl:col-span-4">
-          <h3 class="font-bold text-sm mb-3 text-gray-700">
-            الاستحقاقات القادمة
+        <div class="xl:col-span-4 space-y-4">
+          <h3
+            class="font-bold text-sm text-slate-700 flex items-center gap-2 px-1"
+          >
+            <i class="fa-regular fa-clock"></i> ملخص الاستحقاق
           </h3>
-          <div id="cardsArea" class="space-y-3"></div>
+          <div
+            id="cardsArea"
+            class="space-y-4 max-h-[800px] overflow-y-auto pr-2 custom-scroll"
+          ></div>
         </div>
       </div>
     </div>
@@ -229,27 +324,51 @@
 
       window.render = () => {
         const isAdmin = userRole === "admin";
-        let h = `<th class="pr-4 py-3 text-right">الشريك</th><th class="px-2 text-center text-emerald-700">المال ($)</th>`;
-        state.factors.forEach((f) => {
-          h += `<th class="px-2 min-w-[100px] text-center"><div class="flex flex-col items-center"><input value="${
-            f.name
-          }" ${!isAdmin ? "disabled" : ""} onchange="updFactor('${
-            f.id
-          }','name',this.value)" class="table-input text-xs"><div class="flex items-center justify-center gap-1"><span class="text-[9px]">وزن</span><input type="number" value="${
-            f.weight
-          }" ${!isAdmin ? "disabled" : ""} onchange="updFactor('${
-            f.id
-          }','weight',this.value)" class="w-8 text-center text-[10px] outline-none font-bold bg-transparent border-b"></div></div></th>`;
-        });
-        h += `<th class="pl-4 text-left text-blue-700">النسبة</th>`;
-        document.getElementById("tHead").innerHTML = h;
 
+        // 1. HEADERS
+        let h = `
+                <th class="col-partner text-right">الشريك / المنصب</th>
+                <th class="col-legacy text-center text-amber-600 border-x-2 border-amber-100">رصيد مُرحّل %</th>
+                <th class="text-center">تاريخ البدء</th>
+                <th class="col-cash text-center text-green-700">المال ($)</th>
+            `;
+
+        state.factors.forEach((f) => {
+          h += `
+                <th class="text-center min-w-[100px]">
+                    <div class="flex flex-col gap-1">
+                        <input value="${f.name}" ${
+            !isAdmin ? "disabled" : ""
+          } onchange="updFactor('${
+            f.id
+          }','name',this.value)" class="grid-input text-xs">
+                        <div class="flex items-center justify-center gap-1 bg-gray-100 rounded px-1">
+                            <span class="text-[9px]">وزن:</span>
+                            <input type="number" value="${f.weight}" ${
+            !isAdmin ? "disabled" : ""
+          } onchange="updFactor('${
+            f.id
+          }','weight',this.value)" class="w-8 text-center bg-transparent text-[10px] font-bold outline-none">
+                            ${
+                              isAdmin
+                                ? `<button onclick="delFactor('${f.id}')" class="text-red-400 hover:text-red-600 px-1">×</button>`
+                                : ""
+                            }
+                        </div>
+                    </div>
+                </th>`;
+        });
+        h += `<th class="col-result text-left">المجموع %</th>`;
+        document.getElementById("tHead").innerHTML = `<tr>${h}</tr>`;
+
+        // 2. CALCULATIONS
         let totCash = state.partners.reduce(
           (a, b) => a + (Number(b.cash) || 0),
           0
         );
         let totPts = 0;
         let pPts = {};
+
         state.partners.forEach((p) => {
           let s = 0;
           state.factors.forEach(
@@ -258,44 +377,76 @@
           pPts[p.id] = s;
           totPts += s;
         });
+
         const cashWt = state.config.cashWeight || 30;
 
-        // Body
+        // 3. BODY ROWS
         let b = "";
         state.partners.forEach((p) => {
           let cashShare = totCash ? p.cash / totCash : 0;
           let skillShare = totPts ? pPts[p.id] / totPts : 0;
-          let eq = cashShare * cashWt + skillShare * (100 - cashWt);
-          p._eq = eq;
+          // الحصة الديناميكية الحالية
+          let dynamicEq = cashShare * cashWt + skillShare * (100 - cashWt);
+
+          // الحصة الكلية = الرصيد المرحل (الثابت) + الحصة الديناميكية
+          let legacyEq = Number(p.legacy) || 0;
+          let totalEq = legacyEq + dynamicEq;
+          p._eq = totalEq; // Save for cards logic
+          p._dyn = dynamicEq; // Save dynamic part for calc
 
           let cells = state.factors
             .map(
-              (f) =>
-                `<td class="p-1 border-r border-gray-100"><input type="number" min="0" max="10" value="${
-                  p.scores?.[f.id] || 0
-                }" ${!isAdmin ? "disabled" : ""} onchange="updScore('${
-                  p.id
-                }','${f.id}',this.value)" class="table-input"></td>`
+              (f) => `
+                    <td>
+                        <input type="number" min="0" max="10" value="${
+                          p.scores?.[f.id] || 0
+                        }" 
+                        ${!isAdmin ? "disabled" : ""} 
+                        onchange="updScore('${p.id}','${f.id}',this.value)" 
+                        class="grid-input">
+                    </td>
+                `
             )
             .join("");
 
-          b += `<tr class="hover:bg-gray-50 group"><td class="pr-4 py-3"><div class="font-bold text-gray-800">${
-            p.name
-          }</div><input type="text" value="${p.jobTitle || ""}" ${
+          b += `
+                <tr>
+                    <td class="col-partner">
+                        <div class="font-bold text-slate-800 mb-1 px-1">${
+                          p.name
+                        }</div>
+                        <input type="text" value="${p.jobTitle || ""}" ${
             !isAdmin ? "disabled" : ""
           } onchange="updPart('${
             p.id
-          }','jobTitle',this.value)" class="w-full text-[10px] text-gray-500 bg-transparent outline-none mb-1" placeholder="المنصب"><input type="date" value="${
-            p.start
-          }" ${!isAdmin ? "disabled" : ""} onchange="updPart('${
+          }','jobTitle',this.value)" class="grid-input text-[10px] h-6" placeholder="المنصب">
+                    </td>
+                    <td class="col-legacy border-x-2 border-amber-100 bg-amber-50">
+                        <input type="number" value="${legacyEq}" ${
+            !isAdmin ? "disabled" : ""
+          } onchange="updPart('${
             p.id
-          }','start',this.value)" class="bg-transparent outline-none cursor-pointer w-24 text-[10px] text-gray-400 font-bold"></td><td class="px-2"><input type="number" value="${
-            p.cash
-          }" ${!isAdmin ? "disabled" : ""} onchange="updPart('${
+          }','legacy',this.value)" class="grid-input text-amber-700 font-black dir-ltr">
+                    </td>
+                    <td>
+                        <input type="date" value="${p.start}" ${
+            !isAdmin ? "disabled" : ""
+          } onchange="updPart('${
             p.id
-          }','cash',this.value)" class="table-input font-bold text-emerald-600 dir-ltr"></td>${cells}<td class="pl-4 text-left font-black text-blue-600 dir-ltr">${eq.toFixed(
-            1
-          )}%</td></tr>`;
+          }','start',this.value)" class="grid-input text-[11px]">
+                    </td>
+                    <td class="col-cash">
+                        <input type="number" value="${p.cash}" ${
+            !isAdmin ? "disabled" : ""
+          } onchange="updPart('${
+            p.id
+          }','cash',this.value)" class="grid-input text-green-700 font-black dir-ltr">
+                    </td>
+                    ${cells}
+                    <td class="col-result text-left text-lg dir-ltr">${totalEq.toFixed(
+                      1
+                    )}%</td>
+                </tr>`;
         });
         document.getElementById("tBody").innerHTML = b;
         renderCards();
@@ -313,112 +464,187 @@
               0,
               (now - start) / (1000 * 60 * 60 * 24 * 30.44)
             );
-            const total = p._eq || 0;
 
-            let vested = 0;
+            // Logic: Vested = Fixed Legacy + (Vested portion of Dynamic)
+            const legacy = Number(p.legacy) || 0;
+            const dynamicTotal = p._dyn || 0; // Calculated in table
+
+            let vestedDynamic = 0;
             let nextAmt = 0;
             let nextDate = new Date(start);
             let statusText = "";
-            let statusColor = "";
+            let badgeClass = "";
 
             if (monthsPassed < CLIFF) {
-              // فترة الكليف
-              vested = 0;
+              vestedDynamic = 0;
               statusText = "فترة أمان (Cliff)";
-              statusColor = "bg-amber-100 text-amber-700";
-
-              // الاستحقاق القادم: عند نهاية الكليف
+              badgeClass = "bg-amber-100 text-amber-700";
               nextDate.setMonth(start.getMonth() + CLIFF);
-              nextAmt = (CLIFF / VEST) * total;
+              nextAmt = (CLIFF / VEST) * dynamicTotal;
             } else if (monthsPassed >= VEST) {
-              // مكتمل
-              vested = total;
+              vestedDynamic = dynamicTotal;
               statusText = "مكتمل";
-              statusColor = "bg-green-100 text-green-700";
-              nextAmt = 0; // لا يوجد قادم
+              badgeClass = "bg-green-100 text-green-700";
+              nextAmt = 0;
             } else {
-              // فترة الاستحقاق الجارية
-              vested = (monthsPassed / VEST) * total;
+              vestedDynamic = (monthsPassed / VEST) * dynamicTotal;
               statusText = "جاري الاستحقاق";
-              statusColor = "bg-blue-100 text-blue-700";
-
-              // الاستحقاق القادم: الشهر التالي
-              const nextMonthIndex = Math.floor(monthsPassed) + 1;
-              nextDate.setMonth(start.getMonth() + nextMonthIndex);
-              nextAmt = (1 / VEST) * total;
+              badgeClass = "bg-blue-100 text-blue-700";
+              const nextMonthIdx = Math.floor(monthsPassed) + 1;
+              nextDate.setMonth(start.getMonth() + nextMonthIdx);
+              nextAmt = (1 / VEST) * dynamicTotal;
             }
 
-            const pct = Math.min(100, (monthsPassed / VEST) * 100);
-            // تنسيق التاريخ بالأرقام الإنجليزية (YYYY-MM-DD)
+            const totalVested = legacy + vestedDynamic;
+            const totalTarget = legacy + dynamicTotal;
+            const pct =
+              totalTarget > 0
+                ? Math.min(100, (totalVested / totalTarget) * 100)
+                : 0;
             const dateStr = nextDate.toISOString().split("T")[0];
 
             return `
-        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
-            <div class="flex justify-between items-center mb-3">
-                <span class="font-bold text-sm text-gray-900">${p.name}</span>
-                <span class="text-[10px] font-bold px-2 py-1 rounded ${statusColor}">${statusText}</span>
-            </div>
-            
-            <div class="flex justify-between items-end mb-3">
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-gray-400">المكتسب حالياً</span>
-                    <span class="font-black text-lg text-gray-800 dir-ltr">${vested.toFixed(
-                      2
-                    )}%</span>
-                </div>
-                
-                ${
-                  nextAmt > 0
-                    ? `
-                <div class="flex flex-col items-end">
-                    <span class="text-[10px] text-blue-500 font-bold mb-1">الاستحقاق القادم</span>
-                    <div class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-bold flex gap-2">
-                        <span class="dir-ltr text-black font-black">+${nextAmt.toFixed(
-                          2
-                        )}%</span>
-                        <span class="text-gray-400">|</span>
-                        <span class="dir-ltr font-mono">${dateStr}</span>
+                <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold text-slate-800">${p.name}</span>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded ${badgeClass}">${statusText}</span>
                     </div>
-                </div>
-                `
-                    : ""
-                }
-            </div>
+                    
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <div class="text-[10px] text-slate-400 font-bold">المكتسب الكلي</div>
+                            <div class="text-xl font-black text-slate-900 dir-ltr">${totalVested.toFixed(
+                              2
+                            )}%</div>
+                            <div class="text-[9px] text-slate-400 mt-1">من أصل <span class="dir-ltr">${totalTarget.toFixed(
+                              2
+                            )}%</span></div>
+                        </div>
+                        
+                        ${
+                          nextAmt > 0
+                            ? `
+                        <div class="text-right">
+                            <div class="text-[10px] text-blue-500 font-bold mb-1">الاستحقاق القادم</div>
+                            <div class="flex items-center gap-2 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                                <span class="text-xs font-black text-blue-700 dir-ltr">+${nextAmt.toFixed(
+                                  2
+                                )}%</span>
+                                <span class="text-[9px] text-gray-400">|</span>
+                                <span class="text-[10px] font-bold text-slate-600 dir-ltr">${dateStr}</span>
+                            </div>
+                        </div>
+                        `
+                            : ""
+                        }
+                    </div>
 
-            <div class="relative h-2 bg-gray-100 rounded-full overflow-hidden w-full">
-                <div class="absolute h-full bg-slate-800 transition-all duration-1000" style="width: ${pct}%"></div>
-                <div class="absolute h-full w-[2px] bg-red-400 z-10" style="right:${
-                  (CLIFF / VEST) * 100
-                }%" title="Cliff End"></div>
-            </div>
-        </div>`;
+                    <div class="relative h-2 bg-slate-100 rounded-full overflow-hidden w-full">
+                        <div class="absolute h-full bg-slate-800 transition-all duration-1000" style="width: ${pct}%"></div>
+                        <div class="absolute h-full w-0.5 bg-red-400 z-10" style="right:${
+                          (CLIFF / VEST) * 100
+                        }%" title="نهاية الكليف"></div>
+                    </div>
+                </div>`;
           })
           .join("");
       }
+
+      // --- Export & Writes ---
+      window.exportXLS = () => {
+        const headers = [
+          "الاسم",
+          "المنصب",
+          "رصيد مُرحّل",
+          "البدء",
+          "رأس المال",
+          ...state.factors.map((f) => f.name),
+          "الهدف النهائي",
+          "المكتسب الحالي",
+          "الحالة",
+          "تاريخ القادم",
+          "القيمة القادمة",
+        ];
+        const data = [headers];
+
+        // Reuse Logic for accuracy
+        const now = new Date();
+        const VEST = Number(state.config.vesting);
+        const CLIFF = Number(state.config.cliff);
+
+        state.partners.forEach((p) => {
+          // Logic copy from renderCards
+          const start = new Date(p.start);
+          const monthsPassed = Math.max(
+            0,
+            (now - start) / (1000 * 60 * 60 * 24 * 30.44)
+          );
+          const legacy = Number(p.legacy) || 0;
+          const dynamic = p._dyn || 0;
+          let vestedDyn = 0,
+            nextAmt = 0,
+            nextDate = new Date(start),
+            status = "";
+
+          if (monthsPassed < CLIFF) {
+            vestedDyn = 0;
+            status = "Cliff";
+            nextDate.setMonth(start.getMonth() + CLIFF);
+            nextAmt = (CLIFF / VEST) * dynamic;
+          } else if (monthsPassed >= VEST) {
+            vestedDyn = dynamic;
+            status = "Done";
+            nextAmt = 0;
+          } else {
+            vestedDyn = (monthsPassed / VEST) * dynamic;
+            status = "Vesting";
+            nextDate.setMonth(start.getMonth() + Math.floor(monthsPassed) + 1);
+            nextAmt = (1 / VEST) * dynamic;
+          }
+
+          const row = [
+            p.name,
+            p.jobTitle,
+            legacy,
+            p.start,
+            p.cash,
+            ...state.factors.map((f) => p.scores[f.id] || 0),
+            (legacy + dynamic).toFixed(2),
+            (legacy + vestedDyn).toFixed(2),
+            status,
+            nextAmt > 0 ? nextDate.toISOString().split("T")[0] : "تم",
+            nextAmt.toFixed(2),
+          ];
+          data.push(row);
+        });
+
+        const wb = XLSX.utils.book_new();
+        if (!wb.Workbook) wb.Workbook = {};
+        if (!wb.Workbook.Views) wb.Workbook.Views = [];
+        if (!wb.Workbook.Views[0]) wb.Workbook.Views[0] = {};
+        wb.Workbook.Views[0].RTL = true;
+        XLSX.utils.book_append_sheet(
+          wb,
+          XLSX.utils.aoa_to_sheet(data),
+          "Equity_Report"
+        );
+        XLSX.writeFile(wb, "Datvio_Equity.xlsx");
+      };
+
       window.updScore = (pid, fid, val) =>
         updateDoc(doc(db, "partners_v6", pid), {
           [`scores.${fid}`]: Number(val),
         });
       window.updPart = (pid, key, val) =>
         updateDoc(doc(db, "partners_v6", pid), {
-          [key]: key === "cash" ? Number(val) : val,
+          [key]: key === "cash" || key === "legacy" ? Number(val) : val,
         });
       window.updFactor = (fid, key, val) =>
         updateDoc(doc(db, "factors_v6", fid), {
           [key]: key === "weight" ? Number(val) : val,
         });
-      window.exportXLS = () => {
-        const data = [["الشريك", "المنصب", "البدء", "المال", "النسبة"]];
-        state.partners.forEach((p) =>
-          data.push([p.name, p.jobTitle, p.start, p.cash, p._eq])
-        );
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(
-          wb,
-          XLSX.utils.aoa_to_sheet(data),
-          "Equity"
-        );
-        XLSX.writeFile(wb, "Equity_Report.xlsx");
+      window.delFactor = (fid) => {
+        if (confirm("حذف؟")) deleteDoc(doc(db, "factors_v6", fid));
       };
       document.getElementById("addFactor").onclick = async () =>
         setDoc(doc(collection(db, "factors_v6")), {
